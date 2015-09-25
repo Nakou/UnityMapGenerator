@@ -28,7 +28,7 @@ public class MapGenerator : MonoBehaviour {
 	}
 
 	void startGeneration(){
-		createDiamondMap ();
+		createDiamondSquareMap ();
 	}
 
 	bool checkLenghtSize(){
@@ -42,7 +42,7 @@ public class MapGenerator : MonoBehaviour {
 		return true;
 	}
 
-	void createDiamondMap(){
+	void createDiamondSquareMap(){
 		if (firstPoints.IsFixedSize) {
 			if(firstPoints.Length != 4){
 				firstPoints = new int[4];
@@ -52,7 +52,20 @@ public class MapGenerator : MonoBehaviour {
 				firstPoints[3] = pRandGen.Next(minAltitude,maxAltitude);
 			}
 		}
-		int currentScale = this.chunckLength;
+		int currentSize = this.chunckLength;
+		while (currentSize >= 2) {
+			/*DIAMOND STEP
+			 * a   b *
+			 *   e   *
+			 * d   d *
+			 ********/
+			for(int x = 0; x < currentSize
+			/*SQUARE STEP
+			 * a   b *
+			 *   e   *
+			 * d   d *
+			 ********/
+		}
 	}
 
 	void smoothMap(){
