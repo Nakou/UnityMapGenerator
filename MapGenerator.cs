@@ -6,29 +6,45 @@ using System;
 public class MapGenerator : MonoBehaviour {
 	int[,] map;
 	System.Random pRandGen;
+
+	public GameObject plane;
+	public GameObject mapContainer;
 	
 	public bool useRandomSeed = false;
 	public string seed = "";
-	public int chunckLength;
+	int chunckLength;
+	public int trueChunkLength;
 	public int maxAltitude;
 	public int minAltitude;
 	
 	public int[] firstPoints;
 
 	void Start(){
+		chunckLength = trueChunkLength + 1;
 		generateMap();
 		drawMapInCube();
+		//createGrayscaleImage();
+	}
+		
+	void Update(){
+		if(Input.GetMouseButtonDown(0)){
+			foreach (Transform child in mapContainer.transform) {
+				GameObject.Destroy(child.gameObject);
+			}
+			generateMap();
+			drawMapInCube();
+		}
 	}
 
 	void generateMap(){
 		if (checkLenghtSize ()) {
 			this.map = new int[this.chunckLength, this.chunckLength];
 			startGeneration ();
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 1; i++) {
 				smoothMap();
 			}
 		} else {
-			Debug.LogError("Incorrect Chunk Length, must be 2^n+1");
+			Debug.LogError("Incorrect Chunk Length, must be 2^n");
 		}
 	}
 	
@@ -39,9 +55,20 @@ public class MapGenerator : MonoBehaviour {
 	bool checkLenghtSize(){
 		if ((this.chunckLength - 1) % 2 == 0) {
 			if(this.useRandomSeed){
-				this.seed = System.DateTime.Now.ToString();
+				if(string.IsNullOrEmpty(this.seed)){
+					this.seed = System.DateTime.Now.ToString();
+				} else {
+					this.seed = this.seed.GetHashCode()+"";
+					firstPoints = new int[1];
+				}
 			}
-			pRandGen = new System.Random(this.seed.GetHashCode());
+			int retVal = 0;
+			if(int.TryParse(this.seed,out retVal)){
+				pRandGen = new System.Random(retVal);
+			} else {
+				pRandGen = new System.Random(this.seed.GetHashCode());
+			}
+
 			return true;
 		}
 		return false;
@@ -55,13 +82,11 @@ public class MapGenerator : MonoBehaviour {
 				firstPoints[1] = pRandGen.Next(minAltitude,maxAltitude);
 				firstPoints[2] = pRandGen.Next(minAltitude,maxAltitude);
 				firstPoints[3] = pRandGen.Next(minAltitude,maxAltitude);
-			} else {
-				map[0,0] = firstPoints[0];
-				map[0,chunckLength-1] = firstPoints[1];
-				map[chunckLength-1,0] = firstPoints[2];
-				map[chunckLength-1,chunckLength-1] = firstPoints[3];
-
 			}
+			map[0,0] = firstPoints[0];
+			map[0,chunckLength-1] = firstPoints[1];
+			map[chunckLength-1,0] = firstPoints[2];
+			map[chunckLength-1,chunckLength-1] = firstPoints[3];
 		}
 		float scale = 1/this.chunckLength;
 		int stepSize = this.chunckLength - 1;
@@ -152,9 +177,28 @@ public class MapGenerator : MonoBehaviour {
 		if(map != null){
 			for(int x = 0; x < this.chunckLength; x++){
 				for(int y = 0; y < this.chunckLength; y++){
-					Instantiate(GameObject.CreatePrimitive(PrimitiveType.Cube),new Vector3(-this.chunckLength/2 + x + .5f, map[x,y], -this.chunckLength/2 + y + .5f),Quaternion.identity);
+					//Instantiate(GameObject.CreatePrimitive(PrimitiveType.Cube),new Vector3(-this.chunckLength/2 + x + .5f, map[x,y], -this.chunckLength/2 + y + .5f),Quaternion.identity);
+					GameObject g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+					g.transform.position = new Vector3(-this.chunckLength/2 + x + .5f, map[x,y], -this.chunckLength/2 + y + .5f);
+					g.transform.rotation = Quaternion.identity;
+					g.transform.parent = this.mapContainer.transform;
 				}
 			}
 		}
+	}
+
+	void createGrayscaleImage(){
+		// !!! TOO HEAVY after 512x512
+		float[,] floatMap;
+		Debug.Log(trueChunkLength);
+		floatMap = new float[trueChunkLength,trueChunkLength];
+		for(int x = 0; x < trueChunkLength-1; x++){
+			for(int y = 0; y < trueChunkLength-1; y++){
+				floatMap[x,y] = ((float)(map[x,y] + 50))/100f;
+			}
+		}
+		plane.GetComponent<TerrainCollider>().terrainData.SetHeightsDelayLOD(trueChunkLength,trueChunkLength,floatMap);
+		plane.GetComponent<Terrain>().ApplyDelayedHeightmapModification();
+
 	}
 }
